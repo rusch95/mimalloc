@@ -12,7 +12,7 @@ terms of the MIT license. A copy of the license can be found in the file
 
 // Empty page used to initialize the small free pages array
 const mi_page_t _mi_page_empty = {
-  0, false, false, {0}, 
+  0, false, false, {0},
   0, 0,
   NULL, 0, 0,   // free, used, cookie
   NULL, 0, {0},
@@ -195,7 +195,7 @@ static bool _mi_heap_init() {
     mi_tld_t*  tld = &td->tld;
     mi_heap_t* heap = &td->heap;
     memcpy(heap, &_mi_heap_empty, sizeof(*heap));
-    heap->thread_id = _mi_thread_id();    
+    heap->thread_id = _mi_thread_id();
     heap->random = _mi_random_init(heap->thread_id);
     heap->cookie = ((uintptr_t)heap ^ _mi_heap_random(heap)) | 1;
     heap->tld = tld;
@@ -265,6 +265,7 @@ static bool _mi_heap_done() {
 #elif defined(_WIN32) && !defined(MI_SHARED_LIB)
   // use thread local storage keys to detect thread ending
   #include <windows.h>
+  #include <fibersapi.h>
   static DWORD mi_fls_key;
   static void NTAPI mi_fls_done(PVOID value) {
     if (value!=NULL) mi_thread_done();
@@ -389,9 +390,11 @@ static void mi_process_done(void) {
 
 #if defined(_WIN32) && defined(MI_SHARED_LIB)
   // Windows DLL: easy to hook into process_init and thread_done
-  #include <Windows.h>
+  #include <windows.h>
 
   __declspec(dllexport) BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved) {
+    UNUSED(reserved);
+    UNUSED(inst);
     if (reason==DLL_PROCESS_ATTACH) {
       mi_process_init();
     }
