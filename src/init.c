@@ -6,6 +6,7 @@ terms of the MIT license. A copy of the license can be found in the file
 -----------------------------------------------------------------------------*/
 #include "mimalloc.h"
 #include "mimalloc-internal.h"
+#include "mimalloc-rust.h"
 
 #include <string.h>  // memcpy
 
@@ -301,6 +302,9 @@ bool _mi_is_main_thread() {
 // This is called from the `mi_malloc_generic`
 void mi_thread_init() mi_attr_noexcept
 {
+  // TODO Remove this
+  double_input(2);
+
   // ensure our process has started already
   mi_process_init();
 
