@@ -10,6 +10,7 @@ terms of the MIT license. A copy of the license can be found in the file
 
 #include "mimalloc.h"
 #include "mimalloc-internal.h"
+#include "mimalloc-rust.h"
 
 #include <string.h>  // memset
 #include <stdio.h>   // debug fprintf
@@ -28,15 +29,16 @@ terms of the MIT license. A copy of the license can be found in the file
 #endif
 
 
-uintptr_t _mi_align_up(uintptr_t sz, size_t alignment) {
-  uintptr_t x = (sz / alignment) * alignment;
-  if (x < sz) x += alignment;
-  if (x < sz) return 0; // overflow
-  return x;
-}
+// Comment out functions ported to Rust
+// uintptr_t _mi_align_up(uintptr_t sz, size_t alignment) {
+//   uintptr_t x = (sz / alignment) * alignment;
+//   if (x < sz) x += alignment;
+//   if (x < sz) return 0; // overflow
+//   return x;
+// }
 
 static void* mi_align_up_ptr(void* p, size_t alignment) {
-  return (void*)_mi_align_up((uintptr_t)p, alignment);
+  return (void*)_mi_align_up_rs((uintptr_t)p, alignment);
 }
 
 static uintptr_t _mi_align_down(uintptr_t sz, size_t alignment) {
@@ -240,7 +242,7 @@ static void* mi_os_alloc_aligned_ensured(size_t size, size_t alignment, size_t t
 #else
   // we selectively unmap parts around the over-allocated area.
   size_t pre_size = (uint8_t*)aligned_p - (uint8_t*)p;
-  size_t mid_size = _mi_align_up(size, _mi_os_page_size());
+  size_t mid_size = _mi_align_up_rs(size, _mi_os_page_size());
   size_t post_size = alloc_size - pre_size - mid_size;
   if (pre_size > 0)  mi_munmap(p, pre_size);
   if (post_size > 0) mi_munmap((uint8_t*)aligned_p + mid_size, post_size);
@@ -306,7 +308,7 @@ void* _mi_os_alloc_aligned(size_t size, size_t alignment, mi_os_tld_t* tld)
     }
     else {
       // Otherwise, guess the next address is page aligned `size` from current pointer
-      tld->mmap_next_probable = _mi_align_up((uintptr_t)p + probable_size, alloc_align);
+      tld->mmap_next_probable = _mi_align_up_rs((uintptr_t)p + probable_size, alloc_align);
     }
     tld->mmap_previous = p;
   }
@@ -339,7 +341,7 @@ static void* os_pool_alloc(size_t size, size_t alignment, mi_os_tld_t* tld)
 {
   if (!mi_option_is_enabled(mi_option_pool_commit)) return NULL;
   if (alignment != MI_POOL_ALIGNMENT) return NULL;
-  size = _mi_align_up(size,MI_POOL_ALIGNMENT);
+  size = _mi_align_up_rs(size,MI_POOL_ALIGNMENT);
   if (size > MI_POOL_SIZE) return NULL;
 
   if (tld->pool_available == 0) {

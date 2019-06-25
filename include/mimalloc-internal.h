@@ -38,7 +38,7 @@ bool       _mi_os_unprotect(void* addr, size_t size);
 
 void*      _mi_os_alloc_aligned(size_t size, size_t alignment, mi_os_tld_t* tld);
 size_t     _mi_os_page_size();
-uintptr_t  _mi_align_up(uintptr_t sz, size_t alignment);
+// uintptr_t  _mi_align_up(uintptr_t sz, size_t alignment);
 
 // "segment.c"
 mi_page_t* _mi_segment_page_alloc(size_t block_wsize, mi_segments_tld_t* tld, mi_os_tld_t* os_tld);

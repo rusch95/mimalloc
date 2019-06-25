@@ -303,9 +303,6 @@ bool _mi_is_main_thread() {
 // This is called from the `mi_malloc_generic`
 void mi_thread_init() mi_attr_noexcept
 {
-  // TODO Remove this
-  double_input(2);
-
   // ensure our process has started already
   mi_process_init();
 

@@ -7,6 +7,7 @@ terms of the MIT license. A copy of the license can be found in the file
 #include "mimalloc.h"
 #include "mimalloc-internal.h"
 #include "mimalloc-atomic.h"
+#include "mimalloc-rust.h"
 
 #include <string.h>  // memset
 #include <stdio.h>
@@ -151,15 +152,15 @@ static size_t mi_segment_size(size_t capacity, size_t required, size_t* pre_size
 
   if (!mi_option_is_enabled(mi_option_secure)) {
     // normally no guard pages
-    isize = _mi_align_up(minsize, (16 > MI_MAX_ALIGN_SIZE ? 16 : MI_MAX_ALIGN_SIZE));
+    isize = _mi_align_up_rs(minsize, (16 > MI_MAX_ALIGN_SIZE ? 16 : MI_MAX_ALIGN_SIZE));
   }
   else {
     // in secure mode, we set up a protected page in between the segment info
     // and the page data (and one at the end of the segment)
     size_t page_size = _mi_os_page_size();
-    isize = _mi_align_up(minsize, page_size);
+    isize = _mi_align_up_rs(minsize, page_size);
     guardsize = page_size;
-    required = _mi_align_up(required, page_size);
+    required = _mi_align_up_rs(required, page_size);
   }
 ;
   if (info_size != NULL) *info_size = isize;
