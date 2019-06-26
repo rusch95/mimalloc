@@ -5,4 +5,11 @@
 // "os.c"
 uintptr_t _mi_align_up_rs(uintptr_t sz, size_t alignment);
 
+void* mi_align_up_ptr_rs(void* p, size_t alignment);
+
+uintptr_t _mi_align_down_rs(uintptr_t sz, size_t alignment);
+
+void* mi_align_down_ptr_rs(void* p, size_t alignment);
+
+
 #endif // __MIMALLOC_RUST_H

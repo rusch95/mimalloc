@@ -37,17 +37,17 @@ terms of the MIT license. A copy of the license can be found in the file
 //   return x;
 // }
 
-static void* mi_align_up_ptr(void* p, size_t alignment) {
-  return (void*)_mi_align_up_rs((uintptr_t)p, alignment);
-}
+// static void* mi_align_up_ptr(void* p, size_t alignment) {
+//   return (void*)_mi_align_up_rs((uintptr_t)p, alignment);
+// }
 
-static uintptr_t _mi_align_down(uintptr_t sz, size_t alignment) {
-  return (sz / alignment) * alignment;
-}
+// static uintptr_t _mi_align_down(uintptr_t sz, size_t alignment) {
+//   return (sz / alignment) * alignment;
+// }
 
-static void* mi_align_down_ptr(void* p, size_t alignment) {
-  return (void*)_mi_align_down((uintptr_t)p, alignment);
-}
+// static void* mi_align_down_ptr(void* p, size_t alignment) {
+//   return (void*)_mi_align_down((uintptr_t)p, alignment);
+// }
 
 static void* os_pool_alloc(size_t size, size_t alignment, mi_os_tld_t* tld);
 
@@ -122,8 +122,8 @@ static void* mi_os_page_align_region(void* addr, size_t size, size_t* newsize) {
   if (size == 0 || addr == NULL) return NULL;
 
   // page align conservatively within the range
-  void* start = mi_align_up_ptr(addr, _mi_os_page_size());
-  void* end = mi_align_down_ptr((uint8_t*)addr + size, _mi_os_page_size());
+  void* start = mi_align_up_ptr_rs(addr, _mi_os_page_size());
+  void* end = mi_align_down_ptr_rs((uint8_t*)addr + size, _mi_os_page_size());
   ptrdiff_t diff = (uint8_t*)end - (uint8_t*)start;
   if (diff <= 0) return NULL;
 
@@ -227,7 +227,7 @@ static void* mi_os_alloc_aligned_ensured(size_t size, size_t alignment, size_t t
   void* p = mi_mmap(NULL, alloc_size, 0, stats);
   if (p == NULL) return NULL;
   // create an aligned pointer in the allocated area
-  void* aligned_p = mi_align_up_ptr(p, alignment);
+  void* aligned_p = mi_align_up_ptr_rs(p, alignment);
   mi_assert(aligned_p != NULL);
 #if defined(_WIN32)
   // free it and try to allocate `size` at exactly `aligned_p`
@@ -304,7 +304,7 @@ void* _mi_os_alloc_aligned(size_t size, size_t alignment, mi_os_tld_t* tld)
     size_t probable_size = MI_SEGMENT_SIZE;
     if (tld->mmap_previous > p) {
       // Linux tends to allocate downward
-      tld->mmap_next_probable = _mi_align_down((uintptr_t)p - probable_size, alloc_align); // ((uintptr_t)previous - (uintptr_t)p);
+      tld->mmap_next_probable = _mi_align_down_rs((uintptr_t)p - probable_size, alloc_align); // ((uintptr_t)previous - (uintptr_t)p);
     }
     else {
       // Otherwise, guess the next address is page aligned `size` from current pointer
