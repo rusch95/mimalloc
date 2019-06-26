@@ -143,11 +143,11 @@ void* memalign(size_t alignment, size_t size) {
 }
 
 void* valloc(size_t size) {
-  return mi_malloc_aligned(size, _mi_os_page_size());
+  return mi_malloc_aligned(size, _mi_os_page_size_rs());
 }
 
 void* pvalloc(size_t size) {
-  size_t psize = _mi_os_page_size();
+  size_t psize = _mi_os_page_size_rs();
   if (size >= SIZE_MAX - psize) return NULL; // overflow
   size_t asize = ((size + psize - 1) / psize) * psize;
   return mi_malloc_aligned(asize, psize);

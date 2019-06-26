@@ -46,7 +46,7 @@ static void* zone_calloc(malloc_zone_t* zone, size_t count, size_t size) {
 }
 
 static void* zone_valloc(malloc_zone_t* zone, size_t size) {
-  return mi_malloc_aligned(size, _mi_os_page_size());
+  return mi_malloc_aligned(size, _mi_os_page_size_rs());
 }
 
 static void zone_free(malloc_zone_t* zone, void* p) {

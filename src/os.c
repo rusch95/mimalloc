@@ -52,20 +52,20 @@ terms of the MIT license. A copy of the license can be found in the file
 static void* os_pool_alloc(size_t size, size_t alignment, mi_os_tld_t* tld);
 
 // cached OS page size
-size_t _mi_os_page_size() {
-  static size_t page_size = 0;
-  if (page_size == 0) {
-#if defined(_WIN32)
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    page_size = (si.dwPageSize > 0 ? si.dwPageSize : 4096);
-#else
-    long result = sysconf(_SC_PAGESIZE);
-    page_size = (result > 0 ? (size_t)result : 4096);
-#endif
-  }
-  return page_size;
-}
+// size_t _mi_os_page_size() {
+//   static size_t page_size = 0;
+//   if (page_size == 0) {
+// #if defined(_WIN32)
+//     SYSTEM_INFO si;
+//     GetSystemInfo(&si);
+//     page_size = (si.dwPageSize > 0 ? si.dwPageSize : 4096);
+// #else
+//     long result = sysconf(_SC_PAGESIZE);
+//     page_size = (result > 0 ? (size_t)result : 4096);
+// #endif
+//   }
+//   return page_size;
+// }
 
 
 static void mi_munmap(void* addr, size_t size)
@@ -122,8 +122,8 @@ static void* mi_os_page_align_region(void* addr, size_t size, size_t* newsize) {
   if (size == 0 || addr == NULL) return NULL;
 
   // page align conservatively within the range
-  void* start = mi_align_up_ptr_rs(addr, _mi_os_page_size());
-  void* end = mi_align_down_ptr_rs((uint8_t*)addr + size, _mi_os_page_size());
+  void* start = mi_align_up_ptr_rs(addr, _mi_os_page_size_rs());
+  void* end = mi_align_down_ptr_rs((uint8_t*)addr + size, _mi_os_page_size_rs());
   ptrdiff_t diff = (uint8_t*)end - (uint8_t*)start;
   if (diff <= 0) return NULL;
 
@@ -242,7 +242,7 @@ static void* mi_os_alloc_aligned_ensured(size_t size, size_t alignment, size_t t
 #else
   // we selectively unmap parts around the over-allocated area.
   size_t pre_size = (uint8_t*)aligned_p - (uint8_t*)p;
-  size_t mid_size = _mi_align_up_rs(size, _mi_os_page_size());
+  size_t mid_size = _mi_align_up_rs(size, _mi_os_page_size_rs());
   size_t post_size = alloc_size - pre_size - mid_size;
   if (pre_size > 0)  mi_munmap(p, pre_size);
   if (post_size > 0) mi_munmap((uint8_t*)aligned_p + mid_size, post_size);
@@ -299,7 +299,7 @@ void* _mi_os_alloc_aligned(size_t size, size_t alignment, mi_os_tld_t* tld)
 #if defined(_WIN32)
       64 * 1024; // Windows allocates 64kb aligned
 #else
-      _mi_os_page_size(); // page size on other OS's
+      _mi_os_page_size_rs(); // page size on other OS's
 #endif
     size_t probable_size = MI_SEGMENT_SIZE;
     if (tld->mmap_previous > p) {

@@ -151,7 +151,7 @@ size_t mi_good_size(size_t size) mi_attr_noexcept {
     return _mi_bin_size(_mi_bin(size));
   }
   else {
-    return _mi_align_up_rs(size,_mi_os_page_size());
+    return _mi_align_up_rs(size,_mi_os_page_size_rs());
   }
 }
 

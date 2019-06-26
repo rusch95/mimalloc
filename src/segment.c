@@ -129,7 +129,7 @@ uint8_t* _mi_segment_page_start(const mi_segment_t* segment, const mi_page_t* pa
   if (secure > 1 || (secure == 1 && page->segment_idx == segment->capacity - 1)) {
     // secure == 1: the last page has an os guard page at the end
     // secure >  1: every page has an os guard page
-    psize -= _mi_os_page_size();
+    psize -= _mi_os_page_size_rs();
   }
   
   if (page_size != NULL) *page_size = psize;
@@ -157,7 +157,7 @@ static size_t mi_segment_size(size_t capacity, size_t required, size_t* pre_size
   else {
     // in secure mode, we set up a protected page in between the segment info
     // and the page data (and one at the end of the segment)
-    size_t page_size = _mi_os_page_size();
+    size_t page_size = _mi_os_page_size_rs();
     isize = _mi_align_up_rs(minsize, page_size);
     guardsize = page_size;
     required = _mi_align_up_rs(required, page_size);
@@ -299,9 +299,9 @@ static mi_segment_t* mi_segment_alloc( size_t required, mi_page_kind_t page_kind
   if (mi_option_is_enabled(mi_option_secure)) {
     // in secure mode, we set up a protected page in between the segment info
     // and the page data
-    mi_assert_internal( info_size == pre_size - _mi_os_page_size() && info_size % _mi_os_page_size() == 0);
+    mi_assert_internal( info_size == pre_size - _mi_os_page_size_rs() && info_size % _mi_os_page_size_rs() == 0);
     _mi_os_protect( (uint8_t*)segment + info_size, (pre_size - info_size) );
-    size_t os_page_size = _mi_os_page_size();
+    size_t os_page_size = _mi_os_page_size_rs();
     if (mi_option_get(mi_option_secure) <= 1) {
       // and protect the last page too      
       _mi_os_protect( (uint8_t*)segment + segment_size - os_page_size, os_page_size );
