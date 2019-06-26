@@ -68,20 +68,20 @@ static void* os_pool_alloc(size_t size, size_t alignment, mi_os_tld_t* tld);
 // }
 
 
-static void mi_munmap(void* addr, size_t size)
-{
-  if (addr == NULL || size == 0) return;
-  bool err = false;
-#if defined(_WIN32)
-  err = (VirtualFree(addr, 0, MEM_RELEASE) == 0);
-#else
-  err = (munmap(addr, size) == -1);
-#endif
-  if (err) {
-    #pragma warning(suppress:4996)
-    _mi_warning_message("munmap failed: %s, addr 0x%8li, size %lu\n", strerror(errno), (size_t)addr, size);
-  }
-}
+// static void mi_munmap(void* addr, size_t size)
+// {
+//   if (addr == NULL || size == 0) return;
+//   bool err = false;
+// #if defined(_WIN32)
+//   err = (VirtualFree(addr, 0, MEM_RELEASE) == 0);
+// #else
+//   err = (munmap(addr, size) == -1);
+// #endif
+//   if (err) {
+//     #pragma warning(suppress:4996)
+//     _mi_warning_message("munmap failed: %s, addr 0x%8li, size %lu\n", strerror(errno), (size_t)addr, size);
+//   }
+// }
 
 static void* mi_mmap(void* addr, size_t size, int extra_flags, mi_stats_t* stats) {
   UNUSED(stats);
@@ -106,7 +106,7 @@ static void* mi_mmap(void* addr, size_t size, int extra_flags, mi_stats_t* stats
   p = mmap(addr, size, (PROT_READ | PROT_WRITE), flags, -1, 0);
   if (p == MAP_FAILED) p = NULL;
   if (addr != NULL && p != addr) {
-    mi_munmap(p, size);
+    mi_munmap_rs(p, size);
     p = NULL;
   }
 #endif
@@ -116,21 +116,21 @@ static void* mi_mmap(void* addr, size_t size, int extra_flags, mi_stats_t* stats
 }
 
 
-static void* mi_os_page_align_region(void* addr, size_t size, size_t* newsize) {
-  mi_assert(addr != NULL && size > 0);
-  if (newsize != NULL) *newsize = 0;
-  if (size == 0 || addr == NULL) return NULL;
-
-  // page align conservatively within the range
-  void* start = mi_align_up_ptr_rs(addr, _mi_os_page_size_rs());
-  void* end = mi_align_down_ptr_rs((uint8_t*)addr + size, _mi_os_page_size_rs());
-  ptrdiff_t diff = (uint8_t*)end - (uint8_t*)start;
-  if (diff <= 0) return NULL;
-
-  mi_assert_internal((size_t)diff <= size);
-  if (newsize != NULL) *newsize = (size_t)diff;
-  return start;
-}
+// static void* mi_os_page_align_region(void* addr, size_t size, size_t* newsize) {
+//   mi_assert(addr != NULL && size > 0);
+//   if (newsize != NULL) *newsize = 0;
+//   if (size == 0 || addr == NULL) return NULL;
+// 
+//   // page align conservatively within the range
+//   void* start = mi_align_up_ptr_rs(addr, _mi_os_page_size_rs());
+//   void* end = mi_align_down_ptr_rs((uint8_t*)addr + size, _mi_os_page_size_rs());
+//   ptrdiff_t diff = (uint8_t*)end - (uint8_t*)start;
+//   if (diff <= 0) return NULL;
+// 
+//   mi_assert_internal((size_t)diff <= size);
+//   if (newsize != NULL) *newsize = (size_t)diff;
+//   return start;
+// }
 
 // Signal to the OS that the address range is no longer in use
 // but may be used later again. This will release physical memory
@@ -139,7 +139,7 @@ static void* mi_os_page_align_region(void* addr, size_t size, size_t* newsize) {
 bool _mi_os_reset(void* addr, size_t size) {
   // page align conservatively within the range
   size_t csize;
-  void* start = mi_os_page_align_region(addr,size,&csize);
+  void* start = mi_os_page_align_region_rs(addr,size,&csize);
   if (csize==0) return true;
 
 #if defined(_WIN32)
@@ -167,33 +167,33 @@ bool _mi_os_reset(void* addr, size_t size) {
 }
 
 // Protect a region in memory to be not accessible.
-static  bool mi_os_protectx(void* addr, size_t size, bool protect) {
-  // page align conservatively within the range
-  size_t csize = 0;
-  void* start = mi_os_page_align_region(addr, size, &csize);
-  if (csize==0) return false;
+// static  bool mi_os_protectx(void* addr, size_t size, bool protect) {
+//   // page align conservatively within the range
+//   size_t csize = 0;
+//   void* start = mi_os_page_align_region_rs(addr, size, &csize);
+//   if (csize==0) return false;
+// 
+//   int err = 0;
+// #ifdef _WIN32
+//   DWORD oldprotect = 0;
+//   BOOL ok = VirtualProtect(start,csize,protect ? PAGE_NOACCESS : PAGE_READWRITE,&oldprotect);
+//   err = (ok ? 0 : -1);
+// #else
+//   err = mprotect(start,csize,protect ? PROT_NONE : (PROT_READ|PROT_WRITE));
+// #endif
+//   if (err != 0) {
+//     _mi_warning_message("mprotect error: start: 0x%8p, csize: 0x%8zux, errno: %i\n", start, csize, errno);
+//   }
+//   return (err==0);
+// }
 
-  int err = 0;
-#ifdef _WIN32
-  DWORD oldprotect = 0;
-  BOOL ok = VirtualProtect(start,csize,protect ? PAGE_NOACCESS : PAGE_READWRITE,&oldprotect);
-  err = (ok ? 0 : -1);
-#else
-  err = mprotect(start,csize,protect ? PROT_NONE : (PROT_READ|PROT_WRITE));
-#endif
-  if (err != 0) {
-    _mi_warning_message("mprotect error: start: 0x%8p, csize: 0x%8zux, errno: %i\n", start, csize, errno);
-  }
-  return (err==0);
-}
+// bool _mi_os_protect(void* addr, size_t size) {
+//   return mi_os_protectx(addr,size,true);
+// }
 
-bool _mi_os_protect(void* addr, size_t size) {
-  return mi_os_protectx(addr,size,true);
-}
-
-bool _mi_os_unprotect(void* addr, size_t size) {
-  return mi_os_protectx(addr, size, false);
-}
+// bool _mi_os_unprotect(void* addr, size_t size) {
+//   return mi_os_protectx(addr, size, false);
+// }
 
 /* -----------------------------------------------------------
   OS allocation using mmap/munmap
@@ -209,7 +209,7 @@ void* _mi_os_alloc(size_t size, mi_stats_t* stats) {
 
 void  _mi_os_free(void* p, size_t size, mi_stats_t* stats) {
   UNUSED(stats);
-  mi_munmap(p, size);
+  mi_munmap_rs(p, size);
   mi_stat_decrease(stats->reserved, size);
 }
 
@@ -233,10 +233,10 @@ static void* mi_os_alloc_aligned_ensured(size_t size, size_t alignment, size_t t
   // free it and try to allocate `size` at exactly `aligned_p`
   // note: this may fail in case another thread happens to VirtualAlloc
   // concurrently at that spot. We try up to 3 times to mitigate this.
-  mi_munmap(p, alloc_size);
+  mi_munmap_rs(p, alloc_size);
   p = mi_mmap(aligned_p, size, 0, stats);
   if (p != aligned_p) {
-    if (p != NULL) mi_munmap(p, size);
+    if (p != NULL) mi_munmap_rs(p, size);
     return mi_os_alloc_aligned_ensured(size, alignment, trie++, stats);
   }
 #else
@@ -244,8 +244,8 @@ static void* mi_os_alloc_aligned_ensured(size_t size, size_t alignment, size_t t
   size_t pre_size = (uint8_t*)aligned_p - (uint8_t*)p;
   size_t mid_size = _mi_align_up_rs(size, _mi_os_page_size_rs());
   size_t post_size = alloc_size - pre_size - mid_size;
-  if (pre_size > 0)  mi_munmap(p, pre_size);
-  if (post_size > 0) mi_munmap((uint8_t*)aligned_p + mid_size, post_size);
+  if (pre_size > 0)  mi_munmap_rs(p, pre_size);
+  if (post_size > 0) mi_munmap_rs((uint8_t*)aligned_p + mid_size, post_size);
 #endif
 
   mi_assert(((uintptr_t)aligned_p) % alignment == 0);
@@ -286,7 +286,7 @@ void* _mi_os_alloc_aligned(size_t size, size_t alignment, mi_os_tld_t* tld)
   if (p==NULL || ((uintptr_t)p % alignment) != 0) {
     // if `p` is not yet aligned after all, free the block and use a slower
     // but guaranteed way to allocate an aligned block
-    if (p != NULL) mi_munmap(p, size);
+    if (p != NULL) mi_munmap_rs(p, size);
     mi_stat_increase( tld->stats->mmap_ensure_aligned, 1);
     //fprintf(stderr, "mimalloc: slow mmap 0x%lx\n", _mi_thread_id());
     p = mi_os_alloc_aligned_ensured(size, alignment,0,tld->stats);

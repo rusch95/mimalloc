@@ -282,7 +282,7 @@ static mi_segment_t* mi_segment_alloc( size_t required, mi_page_kind_t page_kind
   if (segment_size == MI_SEGMENT_SIZE) {
     segment = mi_segment_cache_pop(tld);
     if (segment != NULL && mi_option_is_enabled(mi_option_secure) && segment->page_kind != page_kind) {
-      _mi_os_unprotect(segment,segment->segment_size);
+      _mi_os_unprotect_rs(segment,segment->segment_size);
     }
   }
 
@@ -300,16 +300,16 @@ static mi_segment_t* mi_segment_alloc( size_t required, mi_page_kind_t page_kind
     // in secure mode, we set up a protected page in between the segment info
     // and the page data
     mi_assert_internal( info_size == pre_size - _mi_os_page_size_rs() && info_size % _mi_os_page_size_rs() == 0);
-    _mi_os_protect( (uint8_t*)segment + info_size, (pre_size - info_size) );
+    _mi_os_protect_rs( (uint8_t*)segment + info_size, (pre_size - info_size) );
     size_t os_page_size = _mi_os_page_size_rs();
     if (mi_option_get(mi_option_secure) <= 1) {
       // and protect the last page too      
-      _mi_os_protect( (uint8_t*)segment + segment_size - os_page_size, os_page_size );
+      _mi_os_protect_rs( (uint8_t*)segment + segment_size - os_page_size, os_page_size );
     }
     else {
       // protect every page
       for (size_t i = 0; i < capacity; i++) {
-        _mi_os_protect( (uint8_t*)segment + (i+1)*page_size - os_page_size, os_page_size );
+        _mi_os_protect_rs( (uint8_t*)segment + (i+1)*page_size - os_page_size, os_page_size );
       }
     }
   }
